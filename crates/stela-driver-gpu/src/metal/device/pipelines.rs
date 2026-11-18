@@ -1960,7 +1960,13 @@ impl<B: Backend, C: Compiler> Device<B, C> {
         let generated = self.backend.physical_device().limits.generated_commands;
         let bindable =
             generated.is_some_and(|limits| limits.pipeline_stages.contains(ShaderStages::COMPUTE));
-        let subgroups = (plan.thread_execution_width as u32, plan.full_subgroups);
+        let physical = self.backend.physical_device();
+        let subgroups = super::super::compiler::vulkan_subgroup(
+            plan.thread_execution_width as u32,
+            plan.full_subgroups,
+            physical.limits.min_subgroup_size,
+            physical.limits.max_subgroup_size,
+        );
         // A tile pipeline compiles for the largest square of threads its
         // limit holds, when one does.
         let variant = match &tile {

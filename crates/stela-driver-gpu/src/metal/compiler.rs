@@ -2053,6 +2053,24 @@ pub fn simd_lanes(subgroup: u32) -> u32 {
     }
 }
 
+/// The Vulkan subgroup size a compute pipeline of Metal thread execution
+/// `width` requires on a device whose subgroups are `min..=max` lanes wide,
+/// and whether it requires full subgroups: `width` itself where the device
+/// has it, else its narrowest subgroup, where the shader runs `width`-lane
+/// SIMD-groups inside each ([`simd_lanes`]) and a threadgroup that is a
+/// multiple of `width` need not fill one. Vega's subgroups are 64 lanes
+/// only: requiring 32 there had ACO compile wave32 code GFX9 lacks
+/// (`s_and_saveexec_b32`) and abort.
+pub fn vulkan_subgroup(width: u32, full: bool, min: u32, max: u32) -> (u32, bool) {
+    if width == 0 || min == 0 || (min..=max).contains(&width) {
+        (width, full)
+    } else if width < min {
+        (min, false)
+    } else {
+        (max, false)
+    }
+}
+
 /// Every limit of `target`, which the NIR it compiles depends on, in the
 /// order of its fields; the driver's NIR options are keyed by its build.
 fn target_limits(target: &ffi::Target) -> [u32; 13] {
